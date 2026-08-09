@@ -1,0 +1,29 @@
+# Terraform Local Files & State (Checklist Item 19 & Pass/Fail Item 1)
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+thumbnail_lambda.zip
+
+# Spring Boot Build & Dependencies
+target/
+*.jar
+*.war
+.mvn/
+.idea/
+*.iml
+
+# Node.js / React Frontend Build & Dependencies
+node_modules/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+
+# Environment & Credentials
+.env
+.env.local
+aws_credentials
+*.pem
+*.key
