@@ -13,7 +13,6 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# CloudWatch Log Group for All 7 Microservices (Checklist Item 28 - Finite 14-day retention)
 resource "aws_cloudwatch_log_group" "ecs_logs" {
   name              = "/ecs/${var.prefix}-microservices"
   retention_in_days = 14
@@ -23,7 +22,6 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
   }
 }
 
-# Common Environment Variables & Secrets for Database Access
 locals {
   db_environment = [
     {
@@ -52,9 +50,7 @@ locals {
   ]
 }
 
-# ==============================================================================
-# 1. Eureka Server (Service Discovery - Port 8761) -> CloudWatch Logging Enabled
-# ==============================================================================
+# 1. Eureka Server (Port 8761)
 resource "aws_ecs_task_definition" "eureka_server" {
   family                   = "${var.prefix}-eureka-server"
   network_mode             = "awsvpc"
@@ -71,8 +67,8 @@ resource "aws_ecs_task_definition" "eureka_server" {
       essential = true
       portMappings = [
         {
-          containerPort = 8761
-          hostPort      = 8761
+          containerPort = var.eureka_port
+          hostPort      = var.eureka_port
           protocol      = "tcp"
         }
       ]
@@ -106,9 +102,7 @@ resource "aws_ecs_service" "eureka_server" {
   }
 }
 
-# ==============================================================================
-# 2. API Gateway (Routing Gateway - Port 8080) -> CloudWatch Logging Enabled
-# ==============================================================================
+# 2. API Gateway (Port 8080)
 resource "aws_ecs_task_definition" "api_gateway" {
   family                   = "${var.prefix}-api-gateway"
   network_mode             = "awsvpc"
@@ -125,8 +119,8 @@ resource "aws_ecs_task_definition" "api_gateway" {
       essential = true
       portMappings = [
         {
-          containerPort = 8080
-          hostPort      = 8080
+          containerPort = var.gateway_port
+          hostPort      = var.gateway_port
           protocol      = "tcp"
         }
       ]
@@ -164,7 +158,7 @@ resource "aws_ecs_service" "api_gateway" {
   load_balancer {
     target_group_arn = aws_lb_target_group.gateway_tg.arn
     container_name   = "api-gateway"
-    container_port   = 8080
+    container_port   = var.gateway_port
   }
 
   depends_on = [
@@ -173,9 +167,7 @@ resource "aws_ecs_service" "api_gateway" {
   ]
 }
 
-# ==============================================================================
-# 3. Auth Service (Port 8081) -> DB Secrets & CloudWatch Connected
-# ==============================================================================
+# 3. Auth Service (Port 8081)
 resource "aws_ecs_task_definition" "auth_service" {
   family                   = "${var.prefix}-auth-service"
   network_mode             = "awsvpc"
@@ -192,8 +184,8 @@ resource "aws_ecs_task_definition" "auth_service" {
       essential = true
       portMappings = [
         {
-          containerPort = 8081
-          hostPort      = 8081
+          containerPort = var.auth_port
+          hostPort      = var.auth_port
           protocol      = "tcp"
         }
       ]
@@ -232,7 +224,7 @@ resource "aws_ecs_service" "auth_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.auth_tg.arn
     container_name   = "auth-service"
-    container_port   = 8081
+    container_port   = var.auth_port
   }
 
   service_registrations {
@@ -245,9 +237,7 @@ resource "aws_ecs_service" "auth_service" {
   ]
 }
 
-# ==============================================================================
-# 4. Ticket Service (Port 8082) -> DB Secrets, S3 Bucket & CloudWatch Connected
-# ==============================================================================
+# 4. Ticket Service (Port 8082)
 resource "aws_ecs_task_definition" "ticket_service" {
   family                   = "${var.prefix}-ticket-service"
   network_mode             = "awsvpc"
@@ -264,8 +254,8 @@ resource "aws_ecs_task_definition" "ticket_service" {
       essential = true
       portMappings = [
         {
-          containerPort = 8082
-          hostPort      = 8082
+          containerPort = var.ticket_port
+          hostPort      = var.ticket_port
           protocol      = "tcp"
         }
       ]
@@ -308,7 +298,7 @@ resource "aws_ecs_service" "ticket_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.ticket_tg.arn
     container_name   = "ticket-service"
-    container_port   = 8082
+    container_port   = var.ticket_port
   }
 
   service_registrations {
@@ -322,9 +312,7 @@ resource "aws_ecs_service" "ticket_service" {
   ]
 }
 
-# ==============================================================================
-# 5. Attachment Service (Port 8083) -> DB Secrets & CloudWatch Connected
-# ==============================================================================
+# 5. Attachment Service (Port 8083)
 resource "aws_ecs_task_definition" "attachment_service" {
   family                   = "${var.prefix}-attachment-service"
   network_mode             = "awsvpc"
@@ -341,8 +329,8 @@ resource "aws_ecs_task_definition" "attachment_service" {
       essential = true
       portMappings = [
         {
-          containerPort = 8083
-          hostPort      = 8083
+          containerPort = var.attachment_port
+          hostPort      = var.attachment_port
           protocol      = "tcp"
         }
       ]
@@ -385,7 +373,7 @@ resource "aws_ecs_service" "attachment_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.attachment_tg.arn
     container_name   = "attachment-service"
-    container_port   = 8083
+    container_port   = var.attachment_port
   }
 
   service_registrations {
@@ -398,9 +386,7 @@ resource "aws_ecs_service" "attachment_service" {
   ]
 }
 
-# ==============================================================================
-# 6. Comment Service (Port 8084) -> DB Secrets & CloudWatch Connected
-# ==============================================================================
+# 6. Comment Service (Port 8084)
 resource "aws_ecs_task_definition" "comment_service" {
   family                   = "${var.prefix}-comment-service"
   network_mode             = "awsvpc"
@@ -417,8 +403,8 @@ resource "aws_ecs_task_definition" "comment_service" {
       essential = true
       portMappings = [
         {
-          containerPort = 8084
-          hostPort      = 8084
+          containerPort = var.comment_port
+          hostPort      = var.comment_port
           protocol      = "tcp"
         }
       ]
@@ -457,7 +443,7 @@ resource "aws_ecs_service" "comment_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.comment_tg.arn
     container_name   = "comment-service"
-    container_port   = 8084
+    container_port   = var.comment_port
   }
 
   service_registrations {
@@ -470,9 +456,7 @@ resource "aws_ecs_service" "comment_service" {
   ]
 }
 
-# ==============================================================================
-# 7. Dashboard Service (Port 8085) -> DB Secrets & CloudWatch Connected
-# ==============================================================================
+# 7. Dashboard Service (Port 8085)
 resource "aws_ecs_task_definition" "dashboard_service" {
   family                   = "${var.prefix}-dashboard-service"
   network_mode             = "awsvpc"
@@ -489,8 +473,8 @@ resource "aws_ecs_task_definition" "dashboard_service" {
       essential = true
       portMappings = [
         {
-          containerPort = 8085
-          hostPort      = 8085
+          containerPort = var.dashboard_port
+          hostPort      = var.dashboard_port
           protocol      = "tcp"
         }
       ]
@@ -529,7 +513,7 @@ resource "aws_ecs_service" "dashboard_service" {
   load_balancer {
     target_group_arn = aws_lb_target_group.dashboard_tg.arn
     container_name   = "dashboard-service"
-    container_port   = 8085
+    container_port   = var.dashboard_port
   }
 
   service_registrations {

@@ -19,15 +19,15 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // ── Comment Service (8084) ────────────────────────────────────────────
-      '/api/v1/comments': {
-        target: 'http://localhost:8084',
-        changeOrigin: true,
-        secure: false,
-      },
       // ── Attachment Service (8083) ─────────────────────────────────────────
       '/api/v1/attachments': {
         target: 'http://localhost:8083',
+        changeOrigin: true,
+        secure: false,
+      },
+      // ── Comment Service (8084) ────────────────────────────────────────────
+      '/api/v1/comments': {
+        target: 'http://localhost:8084',
         changeOrigin: true,
         secure: false,
       },

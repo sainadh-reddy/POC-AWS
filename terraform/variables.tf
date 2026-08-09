@@ -34,7 +34,7 @@ variable "app_count" {
   description = "Number of ECS tasks to run for each microservice"
 }
 
-# Microservice Ports
+# Sequential Microservice Ports
 variable "gateway_port" {
   type        = number
   default     = 8080

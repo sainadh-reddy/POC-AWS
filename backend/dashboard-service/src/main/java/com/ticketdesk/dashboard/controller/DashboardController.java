@@ -28,18 +28,18 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSummary() {
         Map<String, Object> summary = new HashMap<>();
 
-        // Total tickets
-        Long total = jdbc.queryForObject("SELECT COUNT(*) FROM tickets", Long.class);
-        summary.put("totalTickets", total == null ? 0 : total);
-
-        // By status
-        summary.put("statusCounts",   countByColumn("status"));
-
-        // By priority
-        summary.put("priorityCounts", countByColumn("priority"));
-
-        // By category
-        summary.put("categoryCounts", countByColumn("category"));
+        try {
+            Long total = jdbc.queryForObject("SELECT COUNT(*) FROM tickets", Long.class);
+            summary.put("totalTickets", total == null ? 0 : total);
+            summary.put("statusCounts", countByColumn("status"));
+            summary.put("priorityCounts", countByColumn("priority"));
+            summary.put("categoryCounts", countByColumn("category"));
+        } catch (Exception e) {
+            summary.put("totalTickets", 0);
+            summary.put("statusCounts", Map.of());
+            summary.put("priorityCounts", Map.of());
+            summary.put("categoryCounts", Map.of());
+        }
 
         return ResponseEntity.ok(ApiResponse.success("Dashboard summary retrieved", summary));
     }
@@ -54,13 +54,18 @@ public class DashboardController {
 
     // ── Helper ────────────────────────────────────────────────────────────────
     private Map<String, Long> countByColumn(String column) {
-        String sql = "SELECT " + column + ", COUNT(*) AS cnt FROM tickets GROUP BY " + column;
-        List<Map<String, Object>> rows = jdbc.queryForList(sql);
         Map<String, Long> result = new HashMap<>();
-        for (Map<String, Object> row : rows) {
-            String key   = String.valueOf(row.get(column));
-            Long   count = ((Number) row.get("cnt")).longValue();
-            result.put(key, count);
+        try {
+            String sql = "SELECT " + column + ", COUNT(*) AS cnt FROM tickets GROUP BY " + column;
+            List<Map<String, Object>> rows = jdbc.queryForList(sql);
+            for (Map<String, Object> row : rows) {
+                if (row.get(column) != null) {
+                    String key = String.valueOf(row.get(column));
+                    Long count = ((Number) row.get("cnt")).longValue();
+                    result.put(key, count);
+                }
+            }
+        } catch (Exception ignored) {
         }
         return result;
     }

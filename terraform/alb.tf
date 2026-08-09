@@ -15,7 +15,7 @@ resource "aws_lb" "main" {
 # 1. Target Group: API Gateway (Port 8080)
 resource "aws_lb_target_group" "gateway_tg" {
   name        = "${var.prefix}-gateway-tg"
-  port        = 8080
+  port        = var.gateway_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -40,7 +40,7 @@ resource "aws_lb_target_group" "gateway_tg" {
 # 2. Target Group: Auth Service (Port 8081)
 resource "aws_lb_target_group" "auth_tg" {
   name        = "${var.prefix}-auth-tg"
-  port        = 8081
+  port        = var.auth_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -65,7 +65,7 @@ resource "aws_lb_target_group" "auth_tg" {
 # 3. Target Group: Ticket Service (Port 8082)
 resource "aws_lb_target_group" "ticket_tg" {
   name        = "${var.prefix}-ticket-tg"
-  port        = 8082
+  port        = var.ticket_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -90,7 +90,7 @@ resource "aws_lb_target_group" "ticket_tg" {
 # 4. Target Group: Attachment Service (Port 8083)
 resource "aws_lb_target_group" "attachment_tg" {
   name        = "${var.prefix}-attachment-tg"
-  port        = 8083
+  port        = var.attachment_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -115,7 +115,7 @@ resource "aws_lb_target_group" "attachment_tg" {
 # 5. Target Group: Comment Service (Port 8084)
 resource "aws_lb_target_group" "comment_tg" {
   name        = "${var.prefix}-comment-tg"
-  port        = 8084
+  port        = var.comment_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"
@@ -140,7 +140,7 @@ resource "aws_lb_target_group" "comment_tg" {
 # 6. Target Group: Dashboard Service (Port 8085)
 resource "aws_lb_target_group" "dashboard_tg" {
   name        = "${var.prefix}-dashboard-tg"
-  port        = 8085
+  port        = var.dashboard_port
   protocol    = "HTTP"
   vpc_id      = aws_vpc.main.id
   target_type = "ip"

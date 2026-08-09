@@ -1,6 +1,5 @@
 # Security Groups with Strict Referencing & Inter-Service Traffic Support (Compliance Checklist Item 12 & Pass/Fail Item 3)
 
-# 1. Load Balancer Security Group (Public facing)
 resource "aws_security_group" "alb_sg" {
   name        = "${var.prefix}-alb-sg"
   description = "Controls HTTP traffic to Application Load Balancer"
@@ -35,65 +34,64 @@ resource "aws_security_group" "alb_sg" {
   }
 }
 
-# 2. ECS Fargate Security Group (Private Subnet - traffic allowed strictly from ALB and within SG)
 resource "aws_security_group" "ecs_sg" {
   name        = "${var.prefix}-ecs-sg"
   description = "Allows traffic to microservice containers from ALB and inter-service communication"
   vpc_id      = aws_vpc.main.id
 
-  # Allow ALB traffic to all 7 microservices
+  # Allow ALB traffic to all 7 microservices (ports: 8080, 8081, 8082, 8083, 8084, 8085, 8761)
   ingress {
     description     = "Allow traffic from ALB to API Gateway"
-    from_port       = 8080
-    to_port         = 8080
+    from_port       = var.gateway_port
+    to_port         = var.gateway_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Auth Service"
-    from_port       = 8081
-    to_port         = 8081
+    from_port       = var.auth_port
+    to_port         = var.auth_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Ticket Service"
-    from_port       = 8082
-    to_port         = 8082
+    from_port       = var.ticket_port
+    to_port         = var.ticket_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Attachment Service"
-    from_port       = 8083
-    to_port         = 8083
+    from_port       = var.attachment_port
+    to_port         = var.attachment_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Comment Service"
-    from_port       = 8084
-    to_port         = 8084
+    from_port       = var.comment_port
+    to_port         = var.comment_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Dashboard Service"
-    from_port       = 8085
-    to_port         = 8085
+    from_port       = var.dashboard_port
+    to_port         = var.dashboard_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
 
   ingress {
     description     = "Allow traffic from ALB to Eureka Server"
-    from_port       = 8761
-    to_port         = 8761
+    from_port       = var.eureka_port
+    to_port         = var.eureka_port
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_sg.id]
   }
@@ -120,7 +118,6 @@ resource "aws_security_group" "ecs_sg" {
   }
 }
 
-# 3. RDS MySQL Security Group (Private Subnet - traffic allowed ONLY from ECS Security Group)
 resource "aws_security_group" "rds_sg" {
   name        = "${var.prefix}-rds-sg"
   description = "Allows MySQL traffic strictly from ECS tasks"
