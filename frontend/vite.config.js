@@ -7,9 +7,9 @@ export default defineConfig({
     port: 3000,
     host: true,
     proxy: {
-      // ── Auth Service (8089) ────────────────────────────────────────────────
+      // ── Auth Service (8081) ────────────────────────────────────────────────
       '/api/v1/auth': {
-        target: 'http://localhost:8089',
+        target: 'http://localhost:8081',
         changeOrigin: true,
         secure: false,
       },
@@ -25,15 +25,15 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // ── Attachment Service (8085) ─────────────────────────────────────────
+      // ── Attachment Service (8083) ─────────────────────────────────────────
       '/api/v1/attachments': {
-        target: 'http://localhost:8085',
+        target: 'http://localhost:8083',
         changeOrigin: true,
         secure: false,
       },
-      // ── Dashboard Service (8087) ──────────────────────────────────────────
+      // ── Dashboard Service (8085) ──────────────────────────────────────────
       '/api/v1/dashboard': {
-        target: 'http://localhost:8087',
+        target: 'http://localhost:8085',
         changeOrigin: true,
         secure: false,
       },
