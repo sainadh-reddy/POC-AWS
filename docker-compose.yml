@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  eureka-server:
+    build:
+      context: ./backend/eureka-server
+      dockerfile: Dockerfile
+    container_name: tkt-desk-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - tkt-desk-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: tkt-desk-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: tkt-desk-auth
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  ticket-service:
+    build:
+      context: ./backend/ticket-service
+      dockerfile: Dockerfile
+    container_name: tkt-desk-ticket
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:ticketdesk_db;DB_CLOSE_DELAY=-1;MODE=MySQL
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  attachment-service:
+    build:
+      context: ./backend/attachment-service
+      dockerfile: Dockerfile
+    container_name: tkt-desk-attachment
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  comment-service:
+    build:
+      context: ./backend/comment-service
+      dockerfile: Dockerfile
+    container_name: tkt-desk-comment
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  dashboard-service:
+    build:
+      context: ./backend/dashboard-service
+      dockerfile: Dockerfile
+    container_name: tkt-desk-dashboard
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_URI=http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - tkt-desk-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tkt-desk-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - tkt-desk-net
+
+networks:
+  tkt-desk-net:
+    driver: bridge
