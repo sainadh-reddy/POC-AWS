@@ -28,14 +28,51 @@ variable "db_username" {
   description = "RDS master username"
 }
 
-variable "container_port" {
-  type        = number
-  default     = 8082
-  description = "Port exposed by the backend ticket service container"
-}
-
 variable "app_count" {
   type        = number
-  default     = 2
-  description = "Number of ECS tasks to run for high availability across AZs"
+  default     = 1
+  description = "Number of ECS tasks to run for each microservice"
+}
+
+# Microservice Ports
+variable "gateway_port" {
+  type        = number
+  default     = 8080
+  description = "Port for API Gateway"
+}
+
+variable "auth_port" {
+  type        = number
+  default     = 8081
+  description = "Port for Auth Service"
+}
+
+variable "ticket_port" {
+  type        = number
+  default     = 8082
+  description = "Port for Ticket Service"
+}
+
+variable "attachment_port" {
+  type        = number
+  default     = 8083
+  description = "Port for Attachment Service"
+}
+
+variable "comment_port" {
+  type        = number
+  default     = 8084
+  description = "Port for Comment Service"
+}
+
+variable "dashboard_port" {
+  type        = number
+  default     = 8085
+  description = "Port for Dashboard Service"
+}
+
+variable "eureka_port" {
+  type        = number
+  default     = 8761
+  description = "Port for Eureka Discovery Server"
 }

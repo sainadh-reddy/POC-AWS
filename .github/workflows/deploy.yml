@@ -1,4 +1,4 @@
-name: TicketDesk CI/CD Pipeline (M6)
+name: TicketDesk Microservices CI/CD Pipeline (M6)
 
 on:
   push:
@@ -14,15 +14,12 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: tkt-desk-ticket-service
-  ECS_SERVICE: tkt-desk-service
   ECS_CLUSTER: tkt-desk-cluster
-  ECS_TASK_DEFINITION: terraform/task-definition.json
 
 jobs:
-  # 1. Secret Scanning & Security Audit (Blocks pipeline if secrets found - Item 26)
+  # 1. Secret Scanning & Security Audit (Checklist Item 26)
   secret-scan:
-    name: Secret & Vulnerability Scan
+    name: Secret & Security Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -35,9 +32,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Run Unit Tests (Blocks pipeline if tests fail - Item 26)
+  # 2. Build & Test All Maven Microservices
   unit-test:
-    name: Run Unit Tests
+    name: Test All Microservices
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,17 +47,44 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Test Ticket Service
+      - name: Run Tests Across Microservices
         run: |
-          cd backend/ticket-service
-          mvn test -B
+          for service in api-gateway auth-service ticket-service comment-service attachment-service dashboard-service eureka-server; do
+            echo "Testing $service..."
+            (cd backend/$service && mvn test -B)
+          done
 
-  # 3. Build & Tag Docker Image with Commit SHA, Push to ECR, & Deploy to ECS (Item 25)
+  # 3. Build & Deploy All 7 Microservice Containers to ECR & ECS Fargate
   build-and-deploy:
-    name: Build, Push & Deploy to AWS ECS Fargate
+    name: Build & Deploy All 7 Microservices
     needs: [secret-scan, unit-test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+
+    strategy:
+      matrix:
+        service:
+          - name: eureka-server
+            ecr: tkt-desk-eureka-server
+            ecs: tkt-desk-eureka-server
+          - name: api-gateway
+            ecr: tkt-desk-api-gateway
+            ecs: tkt-desk-api-gateway
+          - name: auth-service
+            ecr: tkt-desk-auth-service
+            ecs: tkt-desk-auth-service
+          - name: ticket-service
+            ecr: tkt-desk-ticket-service
+            ecs: tkt-desk-ticket-service
+          - name: attachment-service
+            ecr: tkt-desk-attachment-service
+            ecs: tkt-desk-attachment-service
+          - name: comment-service
+            ecr: tkt-desk-comment-service
+            ecs: tkt-desk-comment-service
+          - name: dashboard-service
+            ecr: tkt-desk-dashboard-service
+            ecs: tkt-desk-dashboard-service
 
     steps:
       - name: Checkout Code
@@ -77,31 +101,26 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag with Commit SHA, and Push Image to ECR (Item 4)
-        id: build-image
+      - name: Build, Tag with Commit SHA, and Push to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+          ECR_REPO: ${{ matrix.service.ecr }}
         run: |
-          # Build multi-stage Docker image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend/ticket-service
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG ./backend/$SERVICE_NAME
+          docker tag $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:latest
           
-          # Push both commit SHA tag and latest tag
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPO:latest
 
-      - name: Deploy to Amazon ECS Fargate Service
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      - name: Force Deployment Update on ECS Fargate Service
+        env:
+          SERVICE_ECS: ${{ matrix.service.ecs }}
+        run: |
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service $SERVICE_ECS --force-new-deployment
 
-  # 4. Smoke Test Deployed Environment (Item 27)
+  # 4. Post-Deployment Smoke Test
   smoke-test:
     name: Post-Deployment Smoke Test
     needs: [build-and-deploy]
@@ -114,7 +133,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get ALB URL and Run Health Smoke Test
+      - name: Run Health Smoke Test
         run: |
           ALB_URL=$(aws elbv2 describe-load-balancers --names tkt-desk-alb --query "LoadBalancers[0].DNSName" --output text)
           echo "Testing deployment health at http://$ALB_URL/actuator/health..."

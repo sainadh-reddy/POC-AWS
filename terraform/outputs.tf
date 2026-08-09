@@ -1,4 +1,4 @@
-# Terraform Deployment Outputs
+# Terraform Deployment Outputs for ALL Microservices
 
 output "cloudfront_url" {
   value       = "https://${aws_cloudfront_distribution.cdn.domain_name}"
@@ -15,11 +15,6 @@ output "rds_mysql_endpoint" {
   description = "Private RDS MySQL Endpoint"
 }
 
-output "ecr_ticket_service_url" {
-  value       = aws_ecr_repository.ticket_service.repository_url
-  description = "ECR Repository URL for Backend Ticket Service"
-}
-
 output "s3_frontend_bucket" {
   value       = aws_s3_bucket.frontend.id
   description = "Private S3 Bucket hosting static frontend dist"
@@ -28,6 +23,19 @@ output "s3_frontend_bucket" {
 output "s3_attachments_bucket" {
   value       = aws_s3_bucket.attachments.id
   description = "S3 Bucket for attachments presigned upload"
+}
+
+output "ecr_repository_urls" {
+  value = {
+    eureka_server      = aws_ecr_repository.eureka_server.repository_url
+    api_gateway        = aws_ecr_repository.api_gateway.repository_url
+    auth_service       = aws_ecr_repository.auth_service.repository_url
+    ticket_service     = aws_ecr_repository.ticket_service.repository_url
+    attachment_service = aws_ecr_repository.attachment_service.repository_url
+    comment_service    = aws_ecr_repository.comment_service.repository_url
+    dashboard_service  = aws_ecr_repository.dashboard_service.repository_url
+  }
+  description = "ECR Repository URLs for all 7 microservices"
 }
 
 output "cloudwatch_dashboard_url" {
