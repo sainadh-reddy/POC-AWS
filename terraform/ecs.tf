@@ -97,7 +97,7 @@ resource "aws_ecs_service" "eureka_server" {
     assign_public_ip = false
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.eureka.arn
   }
 }
@@ -227,7 +227,7 @@ resource "aws_ecs_service" "auth_service" {
     container_port   = var.auth_port
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.auth.arn
   }
 
@@ -301,7 +301,7 @@ resource "aws_ecs_service" "ticket_service" {
     container_port   = var.ticket_port
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.ticket.arn
   }
 
@@ -376,7 +376,7 @@ resource "aws_ecs_service" "attachment_service" {
     container_port   = var.attachment_port
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.attachment.arn
   }
 
@@ -446,7 +446,7 @@ resource "aws_ecs_service" "comment_service" {
     container_port   = var.comment_port
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.comment.arn
   }
 
@@ -516,7 +516,7 @@ resource "aws_ecs_service" "dashboard_service" {
     container_port   = var.dashboard_port
   }
 
-  service_registrations {
+  service_registries {
     registry_arn = aws_service_discovery_service.dashboard.arn
   }
 

@@ -41,7 +41,7 @@ resource "aws_cloudwatch_metric_alarm" "unhealthy_targets" {
   alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
-    TargetGroup  = aws_lb_target_group.api_tg.arn_suffix
+    TargetGroup  = aws_lb_target_group.gateway_tg.arn_suffix
     LoadBalancer = aws_lb.main.arn_suffix
   }
 }
