@@ -23,31 +23,31 @@ spring:
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
-            - Path=/api/v1/auth/**
+            - Path=/api/v1/auth, /api/v1/auth/**
 
         # Ticket Service Route
         - id: ticket-service
           uri: lb://TICKET-SERVICE
           predicates:
-            - Path=/api/v1/tickets/**
+            - Path=/api/v1/tickets, /api/v1/tickets/**
 
         # Comment Service Route
         - id: comment-service
           uri: lb://COMMENT-SERVICE
           predicates:
-            - Path=/api/v1/comments/**
+            - Path=/api/v1/comments, /api/v1/comments/**
 
         # Attachment Service Route
         - id: attachment-service
           uri: lb://ATTACHMENT-SERVICE
           predicates:
-            - Path=/api/v1/attachments/**
+            - Path=/api/v1/attachments, /api/v1/attachments/**
 
         # Dashboard Service Route
         - id: dashboard-service
           uri: lb://DASHBOARD-SERVICE
           predicates:
-            - Path=/api/v1/dashboard/**
+            - Path=/api/v1/dashboard, /api/v1/dashboard/**
 
 eureka:
   client:

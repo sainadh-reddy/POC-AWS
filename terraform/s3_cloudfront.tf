@@ -130,6 +130,27 @@ resource "aws_cloudfront_distribution" "cdn" {
     max_ttl     = 0
   }
 
+  # /actuator/* Path Pattern Forwarded to ALB for health checks
+  ordered_cache_behavior {
+    path_pattern           = "/actuator/*"
+    target_origin_id       = "ALB-Backend"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Accept", "Content-Type"]
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
