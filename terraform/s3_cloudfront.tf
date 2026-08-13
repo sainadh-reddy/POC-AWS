@@ -32,6 +32,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "frontend_enc" {
 
 # CloudFront Origin Access Control (OAC)
 resource "aws_cloudfront_origin_access_control" "oac" {
+  count                             = var.enable_cloudfront ? 1 : 0
   name                              = "${var.prefix}-frontend-oac"
   description                       = "OAC for static frontend S3 access"
   origin_access_control_origin_type = "s3"
@@ -41,6 +42,7 @@ resource "aws_cloudfront_origin_access_control" "oac" {
 
 # Bucket Policy allowing ONLY CloudFront OAC
 resource "aws_s3_bucket_policy" "frontend_policy" {
+  count  = var.enable_cloudfront ? 1 : 0
   bucket = aws_s3_bucket.frontend.id
 
   policy = jsonencode({
@@ -56,7 +58,7 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
         Resource = "${aws_s3_bucket.frontend.arn}/*"
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
+            "AWS:SourceArn" = aws_cloudfront_distribution.cdn[0].arn
           }
         }
       }
@@ -66,6 +68,7 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 
 # CloudFront Distribution (Serving S3 Frontend on / and ALB on /api/*)
 resource "aws_cloudfront_distribution" "cdn" {
+  count               = var.enable_cloudfront ? 1 : 0
   enabled             = true
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -74,7 +77,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "S3-Frontend"
-    origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
+    origin_access_control_id = aws_cloudfront_origin_access_control.oac[0].id
   }
 
   # ALB Origin for API Requests

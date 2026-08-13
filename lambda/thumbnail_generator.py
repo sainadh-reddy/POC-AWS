@@ -2,11 +2,18 @@ import os
 import json
 import urllib.parse
 import boto3
-from PIL import Image
 import io
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+    print("WARNING: PIL (Pillow) module is missing. Ensure Pillow Lambda layer is attached.")
 
 s3_client = boto3.client('s3')
 THUMBNAIL_BUCKET = os.environ.get('THUMBNAIL_BUCKET')
+
+
 
 def handler(event, context):
     """

@@ -76,3 +76,16 @@ variable "eureka_port" {
   default     = 8761
   description = "Port for Eureka Discovery Server"
 }
+
+variable "pillow_layer_arn" {
+  type        = string
+  default     = ""
+  description = "AWS Lambda Layer ARN for Python 3.11 Pillow dependency (optional)"
+}
+
+variable "enable_cloudfront" {
+  type        = bool
+  default     = false
+  description = "Enable CloudFront CDN distribution (Set true after AWS account verification)"
+}
+

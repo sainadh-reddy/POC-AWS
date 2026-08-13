@@ -1,7 +1,7 @@
 # Terraform Deployment Outputs for ALL Microservices
 
 output "cloudfront_url" {
-  value       = "https://${aws_cloudfront_distribution.cdn.domain_name}"
+  value       = var.enable_cloudfront && length(aws_cloudfront_distribution.cdn) > 0 ? "https://${aws_cloudfront_distribution.cdn[0].domain_name}" : "Disabled (Access frontend directly via ALB or S3)"
   description = "Public URL for TicketDesk Frontend via CloudFront CDN"
 }
 

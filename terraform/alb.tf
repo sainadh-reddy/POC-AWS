@@ -186,7 +186,7 @@ resource "aws_lb_listener_rule" "auth_route" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/auth/*"]
+      values = ["/api/v1/auth", "/api/v1/auth/*"]
     }
   }
 }
@@ -202,7 +202,7 @@ resource "aws_lb_listener_rule" "ticket_route" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/tickets/*"]
+      values = ["/api/v1/tickets", "/api/v1/tickets/*"]
     }
   }
 }
@@ -218,7 +218,7 @@ resource "aws_lb_listener_rule" "attachment_route" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/attachments/*"]
+      values = ["/api/v1/attachments", "/api/v1/attachments/*"]
     }
   }
 }
@@ -234,7 +234,7 @@ resource "aws_lb_listener_rule" "comment_route" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/comments/*"]
+      values = ["/api/v1/comments", "/api/v1/comments/*"]
     }
   }
 }
@@ -250,7 +250,7 @@ resource "aws_lb_listener_rule" "dashboard_route" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/dashboard/*"]
+      values = ["/api/v1/dashboard", "/api/v1/dashboard/*"]
     }
   }
 }

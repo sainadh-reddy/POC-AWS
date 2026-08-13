@@ -25,7 +25,7 @@ resource "aws_db_instance" "mysql" {
   # Strict Compliance Requirements
   publicly_accessible     = false # Item 16 & Pass/Fail Item 3
   storage_encrypted       = true  # Item 20
-  backup_retention_period = 7     # Item 21
+  backup_retention_period = 1     # Free Tier compatible
   skip_final_snapshot     = true  # Enables clean terraform destroy
 
   tags = {

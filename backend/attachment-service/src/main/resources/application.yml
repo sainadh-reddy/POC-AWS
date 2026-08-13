@@ -29,8 +29,14 @@ app:
   upload:
     dir: ${UPLOAD_DIR:./uploads}
 
+aws:
+  region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket: ${S3_ATTACHMENT_BUCKET:}
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+
