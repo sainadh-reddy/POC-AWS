@@ -1,27 +1,34 @@
-name: TicketDesk Microservices CI/CD Pipeline (M6)
+name: TicketDesk Microservices CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
 
 permissions:
   contents: read
-  id-token: write
 
 env:
   AWS_REGION: us-east-1
   ECS_CLUSTER: tkt-desk-cluster
+  ALB_NAME: tkt-desk-alb
 
 jobs:
-  # 1. Secret Scanning & Security Audit (Checklist Item 26)
+
+  # ============================================================
+  # 1. SECRET SCANNING
+  # ============================================================
+
   secret-scan:
     name: Secret & Security Scan
     runs-on: ubuntu-latest
+
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -32,64 +39,114 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Build & Test All Maven Microservices
+
+  # ============================================================
+  # 2. BUILD & TEST ALL MICROSERVICES
+  # ============================================================
+
   unit-test:
     name: Test All Microservices
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - api-gateway
+          - auth-service
+          - ticket-service
+          - comment-service
+          - attachment-service
+          - dashboard-service
+          - eureka-server
+
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'temurin'
+          java-version: "17"
+          distribution: "temurin"
           cache: maven
 
-      - name: Run Tests Across Microservices
+      - name: Test ${{ matrix.service }}
+        working-directory: backend/${{ matrix.service }}
         run: |
-          for service in api-gateway auth-service ticket-service comment-service attachment-service dashboard-service eureka-server; do
-            echo "Testing $service..."
-            (cd backend/$service && mvn test -B)
-          done
+          echo "======================================"
+          echo "Testing ${{ matrix.service }}"
+          echo "======================================"
 
-  # 3. Build & Deploy All 7 Microservice Containers to ECR & ECS Fargate
+          mvn clean test -B
+
+          echo "${{ matrix.service }} tests completed successfully."
+
+
+  # ============================================================
+  # 3. BUILD DOCKER IMAGES + PUSH TO ECR + DEPLOY ECS
+  # ============================================================
+
   build-and-deploy:
-    name: Build & Deploy All 7 Microservices
-    needs: [secret-scan, unit-test]
+    name: Build & Deploy ${{ matrix.service.name }}
+    needs:
+      - secret-scan
+      - unit-test
+
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+
+    # Deploy ONLY when code is pushed to main.
+    # Pull requests will run security + tests but won't deploy.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     strategy:
+      fail-fast: false
       matrix:
         service:
+
           - name: eureka-server
             ecr: tkt-desk-eureka-server
             ecs: tkt-desk-eureka-server
+
           - name: api-gateway
             ecr: tkt-desk-api-gateway
             ecs: tkt-desk-api-gateway
+
           - name: auth-service
             ecr: tkt-desk-auth-service
             ecs: tkt-desk-auth-service
+
           - name: ticket-service
             ecr: tkt-desk-ticket-service
             ecs: tkt-desk-ticket-service
+
           - name: attachment-service
             ecr: tkt-desk-attachment-service
             ecs: tkt-desk-attachment-service
+
           - name: comment-service
             ecr: tkt-desk-comment-service
             ecs: tkt-desk-comment-service
+
           - name: dashboard-service
             ecr: tkt-desk-dashboard-service
             ecs: tkt-desk-dashboard-service
 
     steps:
+
+      # --------------------------------------------------------
+      # Checkout
+      # --------------------------------------------------------
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
+
+      # --------------------------------------------------------
+      # AWS Authentication
+      # --------------------------------------------------------
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -97,35 +154,231 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Log in to Amazon ECR
+
+      # --------------------------------------------------------
+      # Verify AWS Authentication
+      # --------------------------------------------------------
+
+      - name: Verify AWS Identity
+        run: |
+          echo "Checking AWS credentials..."
+
+          aws sts get-caller-identity
+
+          echo "AWS authentication successful."
+
+
+      # --------------------------------------------------------
+      # Verify ECS Cluster
+      # --------------------------------------------------------
+
+      - name: Verify ECS Cluster
+        run: |
+          echo "Checking ECS cluster..."
+
+          aws ecs describe-clusters \
+            --clusters "${{ env.ECS_CLUSTER }}" \
+            --region "${{ env.AWS_REGION }}"
+
+
+      # --------------------------------------------------------
+      # Verify ECR Repository
+      # --------------------------------------------------------
+
+      - name: Verify ECR Repository
+        env:
+          ECR_REPO: ${{ matrix.service.ecr }}
+        run: |
+          echo "Checking ECR repository: $ECR_REPO"
+
+          aws ecr describe-repositories \
+            --repository-names "$ECR_REPO" \
+            --region "${{ env.AWS_REGION }}"
+
+          echo "ECR repository exists."
+
+
+      # --------------------------------------------------------
+      # Login to ECR
+      # --------------------------------------------------------
+
+      - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag with Commit SHA, and Push to ECR
+
+      # --------------------------------------------------------
+      # Build Docker Image
+      # --------------------------------------------------------
+
+      - name: Build Docker Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          ECR_REPO: ${{ matrix.service.ecr }}
           SERVICE_NAME: ${{ matrix.service.name }}
+        run: |
+          echo "======================================"
+          echo "Building $SERVICE_NAME"
+          echo "======================================"
+
+          docker build \
+            -t "$ECR_REGISTRY/$ECR_REPO:latest" \
+            "./backend/$SERVICE_NAME"
+
+          echo "Docker image built successfully."
+
+
+      # --------------------------------------------------------
+      # Tag Image With Commit SHA
+      # --------------------------------------------------------
+
+      - name: Tag Docker Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ matrix.service.ecr }}
+          SERVICE_NAME: ${{ matrix.service.name }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker tag \
+            "$ECR_REGISTRY/$ECR_REPO:latest" \
+            "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG"
+
+          echo "Image tags created:"
+          echo "$ECR_REGISTRY/$ECR_REPO:latest"
+          echo "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG"
+
+
+      # --------------------------------------------------------
+      # Push Images to ECR
+      # --------------------------------------------------------
+
+      - name: Push Docker Images to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ matrix.service.ecr }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Pushing latest image..."
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPO:latest"
+
+          echo "Pushing commit SHA image..."
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG"
+
+          echo "Images pushed successfully."
+
+
+      # --------------------------------------------------------
+      # Verify Image Exists in ECR
+      # --------------------------------------------------------
+
+      - name: Verify ECR Image
+        env:
           ECR_REPO: ${{ matrix.service.ecr }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG ./backend/$SERVICE_NAME
-          docker tag $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPO:latest
-          
-          docker push $ECR_REGISTRY/$ECR_REPO:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPO:latest
+          echo "Checking image in ECR..."
 
-      - name: Force Deployment Update on ECS Fargate Service
+          aws ecr describe-images \
+            --repository-name "$ECR_REPO" \
+            --image-ids imageTag=latest \
+            --region "${{ env.AWS_REGION }}"
+
+          echo "ECR image verified."
+
+
+      # --------------------------------------------------------
+      # Verify ECS Service
+      # --------------------------------------------------------
+
+      - name: Verify ECS Service
         env:
-          SERVICE_ECS: ${{ matrix.service.ecs }}
+          ECS_SERVICE: ${{ matrix.service.ecs }}
         run: |
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service $SERVICE_ECS --force-new-deployment
+          echo "Checking ECS service: $ECS_SERVICE"
 
-  # 4. Post-Deployment Smoke Test
+          aws ecs describe-services \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "$ECS_SERVICE" \
+            --region "${{ env.AWS_REGION }}"
+
+
+      # --------------------------------------------------------
+      # Force ECS Deployment
+      # --------------------------------------------------------
+
+      - name: Deploy to ECS Fargate
+        env:
+          ECS_SERVICE: ${{ matrix.service.ecs }}
+        run: |
+          echo "======================================"
+          echo "Deploying $ECS_SERVICE"
+          echo "======================================"
+
+          aws ecs update-service \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment \
+            --region "${{ env.AWS_REGION }}"
+
+          echo "ECS deployment started."
+
+
+      # --------------------------------------------------------
+      # Wait Until ECS Service Is Stable
+      # --------------------------------------------------------
+
+      - name: Wait for ECS Service Stability
+        env:
+          ECS_SERVICE: ${{ matrix.service.ecs }}
+        run: |
+          echo "Waiting for $ECS_SERVICE to become stable..."
+
+          aws ecs wait services-stable \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "$ECS_SERVICE" \
+            --region "${{ env.AWS_REGION }}"
+
+          echo "$ECS_SERVICE is stable."
+
+
+      # --------------------------------------------------------
+      # Show ECS Service Status
+      # --------------------------------------------------------
+
+      - name: Show ECS Deployment Status
+        env:
+          ECS_SERVICE: ${{ matrix.service.ecs }}
+        run: |
+          aws ecs describe-services \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "$ECS_SERVICE" \
+            --region "${{ env.AWS_REGION }}" \
+            --query "services[0].{Service:serviceName,Status:status,Running:runningCount,Desired:desiredCount,Pending:pendingCount}" \
+            --output table
+
+
+  # ============================================================
+  # 4. POST DEPLOYMENT SMOKE TEST
+  # ============================================================
+
   smoke-test:
     name: Post-Deployment Smoke Test
-    needs: [build-and-deploy]
+    needs:
+      - build-and-deploy
+
     runs-on: ubuntu-latest
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     steps:
+
+      # --------------------------------------------------------
+      # AWS Authentication
+      # --------------------------------------------------------
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -133,15 +386,132 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Run Health Smoke Test
+
+      # --------------------------------------------------------
+      # Verify AWS
+      # --------------------------------------------------------
+
+      - name: Verify AWS Identity
         run: |
-          ALB_URL=$(aws elbv2 describe-load-balancers --names tkt-desk-alb --query "LoadBalancers[0].DNSName" --output text)
-          echo "Testing deployment health at http://$ALB_URL/actuator/health..."
-          
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://$ALB_URL/actuator/health || echo "000")
-          if [ "$HTTP_STATUS" -eq 200 ]; then
-            echo "Smoke test PASSED with status HTTP 200 OK!"
-          else
-            echo "Smoke test FAILED with status $HTTP_STATUS!"
+          aws sts get-caller-identity
+
+
+      # --------------------------------------------------------
+      # Get ALB DNS Name
+      # --------------------------------------------------------
+
+      - name: Get ALB DNS
+        id: alb
+        run: |
+
+          ALB_URL=$(aws elbv2 describe-load-balancers \
+            --names "${{ env.ALB_NAME }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --query "LoadBalancers[0].DNSName" \
+            --output text)
+
+          if [ -z "$ALB_URL" ] || [ "$ALB_URL" = "None" ]; then
+            echo "ERROR: ALB was not found."
             exit 1
           fi
+
+          echo "ALB DNS: $ALB_URL"
+
+          echo "url=$ALB_URL" >> "$GITHUB_OUTPUT"
+
+
+      # --------------------------------------------------------
+      # Wait For ALB / Application
+      # --------------------------------------------------------
+
+      - name: Wait For Application
+        run: |
+          echo "Waiting for application to become available..."
+
+          sleep 30
+
+
+      # --------------------------------------------------------
+      # Health Check
+      # --------------------------------------------------------
+
+      - name: Run Health Smoke Test
+        env:
+          ALB_URL: ${{ steps.alb.outputs.url }}
+        run: |
+
+          HEALTH_URL="http://$ALB_URL/actuator/health"
+
+          echo "======================================"
+          echo "Running Smoke Test"
+          echo "URL: $HEALTH_URL"
+          echo "======================================"
+
+          SUCCESS=false
+
+          for i in {1..12}; do
+
+            echo "Attempt $i/12..."
+
+            HTTP_STATUS=$(curl \
+              --connect-timeout 10 \
+              --max-time 20 \
+              -s \
+              -o /tmp/health-response.json \
+              -w "%{http_code}" \
+              "$HEALTH_URL" || true)
+
+            echo "HTTP Status: $HTTP_STATUS"
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+
+              echo "Health check PASSED."
+
+              echo "Response:"
+              cat /tmp/health-response.json
+
+              SUCCESS=true
+              break
+
+            fi
+
+            echo "Application is not ready yet."
+            sleep 10
+
+          done
+
+          if [ "$SUCCESS" = true ]; then
+            echo "======================================"
+            echo "SMOKE TEST PASSED"
+            echo "======================================"
+          else
+            echo "======================================"
+            echo "SMOKE TEST FAILED"
+            echo "======================================"
+
+            echo "Final response:"
+            cat /tmp/health-response.json || true
+
+            exit 1
+          fi
+
+
+      # --------------------------------------------------------
+      # Final Deployment Status
+      # --------------------------------------------------------
+
+      - name: Deployment Successful
+        run: |
+          echo "======================================"
+          echo "TICKETDESK DEPLOYMENT SUCCESSFUL"
+          echo "======================================"
+
+          echo "All microservices were:"
+          echo "1. Security scanned"
+          echo "2. Unit tested"
+          echo "3. Docker built"
+          echo "4. Pushed to ECR"
+          echo "5. Deployed to ECS Fargate"
+          echo "6. ECS services verified"
+          echo "7. ALB health checked"
+          echo "======================================"
