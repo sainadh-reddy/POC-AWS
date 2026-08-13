@@ -3,6 +3,7 @@
 resource "aws_ecr_repository" "eureka_server" {
   name                 = "${var.prefix}-eureka-server"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -16,6 +17,7 @@ resource "aws_ecr_repository" "eureka_server" {
 resource "aws_ecr_repository" "api_gateway" {
   name                 = "${var.prefix}-api-gateway"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -29,6 +31,7 @@ resource "aws_ecr_repository" "api_gateway" {
 resource "aws_ecr_repository" "auth_service" {
   name                 = "${var.prefix}-auth-service"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -42,6 +45,7 @@ resource "aws_ecr_repository" "auth_service" {
 resource "aws_ecr_repository" "ticket_service" {
   name                 = "${var.prefix}-ticket-service"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -55,6 +59,7 @@ resource "aws_ecr_repository" "ticket_service" {
 resource "aws_ecr_repository" "attachment_service" {
   name                 = "${var.prefix}-attachment-service"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -68,6 +73,7 @@ resource "aws_ecr_repository" "attachment_service" {
 resource "aws_ecr_repository" "comment_service" {
   name                 = "${var.prefix}-comment-service"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -81,6 +87,7 @@ resource "aws_ecr_repository" "comment_service" {
 resource "aws_ecr_repository" "dashboard_service" {
   name                 = "${var.prefix}-dashboard-service"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
