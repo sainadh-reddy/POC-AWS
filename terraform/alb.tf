@@ -29,7 +29,7 @@ resource "aws_lb_target_group" "gateway_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {
@@ -54,7 +54,7 @@ resource "aws_lb_target_group" "auth_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {
@@ -79,7 +79,7 @@ resource "aws_lb_target_group" "ticket_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {
@@ -104,7 +104,7 @@ resource "aws_lb_target_group" "attachment_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {
@@ -129,7 +129,7 @@ resource "aws_lb_target_group" "comment_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {
@@ -154,7 +154,7 @@ resource "aws_lb_target_group" "dashboard_tg" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
-    matcher             = "200"
+    matcher             = "200-399"
   }
 
   tags = {

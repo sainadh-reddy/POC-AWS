@@ -57,7 +57,11 @@ eureka:
     preferIpAddress: true
 
 management:
+  health:
+    discovery:
+      enabled: false
   endpoints:
     web:
       exposure:
         include: health,info,gateway
+
