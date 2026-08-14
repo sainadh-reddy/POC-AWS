@@ -525,3 +525,62 @@ resource "aws_ecs_service" "dashboard_service" {
     aws_ecs_service.eureka_server
   ]
 }
+
+# 8. Frontend React SPA Nginx Container (Port 80)
+resource "aws_ecs_task_definition" "frontend_service" {
+  family                   = "${var.prefix}-frontend-service"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "frontend-service"
+      image     = "${aws_ecr_repository.frontend.repository_url}:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = var.frontend_port
+          hostPort      = var.frontend_port
+          protocol      = "tcp"
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "frontend"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_ecs_service" "frontend_service" {
+  name            = "${var.prefix}-frontend-service"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.frontend_service.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    security_groups  = [aws_security_group.ecs_sg.id]
+    subnets          = [aws_subnet.private_app_1.id, aws_subnet.private_app_2.id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "frontend-service"
+    container_port   = var.frontend_port
+  }
+
+  depends_on = [
+    aws_ecs_service.api_gateway
+  ]
+}
+

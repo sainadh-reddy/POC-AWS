@@ -89,3 +89,10 @@ variable "enable_cloudfront" {
   description = "Enable CloudFront CDN distribution (Set true after AWS account verification)"
 }
 
+variable "frontend_port" {
+  type        = number
+  default     = 80
+  description = "Port for Frontend React SPA Nginx Container"
+}
+
+

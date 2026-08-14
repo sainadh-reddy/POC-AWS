@@ -34,8 +34,9 @@ output "ecr_repository_urls" {
     attachment_service = aws_ecr_repository.attachment_service.repository_url
     comment_service    = aws_ecr_repository.comment_service.repository_url
     dashboard_service  = aws_ecr_repository.dashboard_service.repository_url
+    frontend           = aws_ecr_repository.frontend.repository_url
   }
-  description = "ECR Repository URLs for all 7 microservices"
+  description = "ECR Repository URLs for microservices and frontend"
 }
 
 output "cloudwatch_dashboard_url" {

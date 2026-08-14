@@ -134,6 +134,10 @@ jobs:
             ecr: tkt-desk-dashboard-service
             ecs: tkt-desk-dashboard-service
 
+          - name: frontend
+            ecr: tkt-desk-frontend
+            ecs: tkt-desk-frontend-service
+
     steps:
 
       # --------------------------------------------------------
@@ -222,9 +226,14 @@ jobs:
           echo "Building $SERVICE_NAME"
           echo "======================================"
 
+          BUILD_PATH="./backend/$SERVICE_NAME"
+          if [ "$SERVICE_NAME" = "frontend" ]; then
+            BUILD_PATH="./frontend"
+          fi
+
           docker build \
             -t "$ECR_REGISTRY/$ECR_REPO:latest" \
-            "./backend/$SERVICE_NAME"
+            "$BUILD_PATH"
 
           echo "Docker image built successfully."
 
