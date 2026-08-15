@@ -26,9 +26,9 @@ resource "aws_lb_target_group" "gateway_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -51,9 +51,9 @@ resource "aws_lb_target_group" "auth_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -76,9 +76,9 @@ resource "aws_lb_target_group" "ticket_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -101,9 +101,9 @@ resource "aws_lb_target_group" "attachment_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -126,9 +126,9 @@ resource "aws_lb_target_group" "comment_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -151,9 +151,9 @@ resource "aws_lb_target_group" "dashboard_tg" {
     protocol            = "HTTP"
     port                = "traffic-port"
     interval            = 30
-    timeout             = 5
+    timeout             = 10
     healthy_threshold   = 2
-    unhealthy_threshold = 3
+    unhealthy_threshold = 5
     matcher             = "200-399"
   }
 
@@ -200,6 +200,22 @@ resource "aws_lb_listener" "http" {
 
 
 # Path-Based Routing Rules for Microservices
+resource "aws_lb_listener_rule" "gateway_route" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 5
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.gateway_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/actuator", "/actuator/*", "/api/v1/gateway", "/api/v1/gateway/*"]
+    }
+  }
+}
+
 resource "aws_lb_listener_rule" "auth_route" {
   listener_arn = aws_lb_listener.http.arn
   priority     = 10

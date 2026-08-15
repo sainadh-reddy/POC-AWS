@@ -26,6 +26,27 @@ resource "aws_service_discovery_service" "eureka" {
   }
 }
 
+# Service Discovery Registration for API Gateway
+resource "aws_service_discovery_service" "api_gateway" {
+  name = "api-gateway"
+
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.main.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}
+
+
 # Service Discovery Registration for Auth Service
 resource "aws_service_discovery_service" "auth" {
   name = "auth-service"

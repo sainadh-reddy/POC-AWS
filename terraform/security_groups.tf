@@ -96,6 +96,14 @@ resource "aws_security_group" "ecs_sg" {
     security_groups = [aws_security_group.alb_sg.id]
   }
 
+  ingress {
+    description     = "Allow traffic from ALB to Frontend Service"
+    from_port       = var.frontend_port
+    to_port         = var.frontend_port
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+
   # Allow all internal communication between microservices within ecs_sg
   ingress {
     description = "Allow all inter-service traffic within ECS security group"

@@ -55,8 +55,8 @@ resource "aws_ecs_task_definition" "eureka_server" {
   family                   = "${var.prefix}-eureka-server"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -91,6 +91,11 @@ resource "aws_ecs_service" "eureka_server" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
     subnets          = [aws_subnet.private_app_1.id, aws_subnet.private_app_2.id]
@@ -107,8 +112,8 @@ resource "aws_ecs_task_definition" "api_gateway" {
   family                   = "${var.prefix}-api-gateway"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -143,11 +148,17 @@ resource "aws_ecs_task_definition" "api_gateway" {
 }
 
 resource "aws_ecs_service" "api_gateway" {
-  name            = "${var.prefix}-api-gateway"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.api_gateway.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-api-gateway"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.api_gateway.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -161,6 +172,10 @@ resource "aws_ecs_service" "api_gateway" {
     container_port   = var.gateway_port
   }
 
+  service_registries {
+    registry_arn = aws_service_discovery_service.api_gateway.arn
+  }
+
   depends_on = [
     aws_lb_listener.http,
     aws_ecs_service.eureka_server
@@ -172,8 +187,8 @@ resource "aws_ecs_task_definition" "auth_service" {
   family                   = "${var.prefix}-auth-service"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -209,11 +224,17 @@ resource "aws_ecs_task_definition" "auth_service" {
 }
 
 resource "aws_ecs_service" "auth_service" {
-  name            = "${var.prefix}-auth-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.auth_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-auth-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.auth_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -242,8 +263,8 @@ resource "aws_ecs_task_definition" "ticket_service" {
   family                   = "${var.prefix}-ticket-service"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -283,11 +304,17 @@ resource "aws_ecs_task_definition" "ticket_service" {
 }
 
 resource "aws_ecs_service" "ticket_service" {
-  name            = "${var.prefix}-ticket-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.ticket_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-ticket-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.ticket_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -317,8 +344,8 @@ resource "aws_ecs_task_definition" "attachment_service" {
   family                   = "${var.prefix}-attachment-service"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -358,11 +385,17 @@ resource "aws_ecs_task_definition" "attachment_service" {
 }
 
 resource "aws_ecs_service" "attachment_service" {
-  name            = "${var.prefix}-attachment-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.attachment_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-attachment-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.attachment_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -391,8 +424,8 @@ resource "aws_ecs_task_definition" "comment_service" {
   family                   = "${var.prefix}-comment-service"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -428,11 +461,17 @@ resource "aws_ecs_task_definition" "comment_service" {
 }
 
 resource "aws_ecs_service" "comment_service" {
-  name            = "${var.prefix}-comment-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.comment_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-comment-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.comment_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -461,8 +500,8 @@ resource "aws_ecs_task_definition" "dashboard_service" {
   family                   = "${var.prefix}-dashboard-service"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "512"
+  memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_task_role.arn
 
@@ -498,11 +537,17 @@ resource "aws_ecs_task_definition" "dashboard_service" {
 }
 
 resource "aws_ecs_service" "dashboard_service" {
-  name            = "${var.prefix}-dashboard-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.dashboard_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-dashboard-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.dashboard_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 300
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -561,11 +606,17 @@ resource "aws_ecs_task_definition" "frontend_service" {
 }
 
 resource "aws_ecs_service" "frontend_service" {
-  name            = "${var.prefix}-frontend-service"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.frontend_service.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  name                            = "${var.prefix}-frontend-service"
+  cluster                         = aws_ecs_cluster.main.id
+  task_definition                 = aws_ecs_task_definition.frontend_service.arn
+  desired_count                   = 1
+  launch_type                     = "FARGATE"
+  health_check_grace_period_seconds = 60
+
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
 
   network_configuration {
     security_groups  = [aws_security_group.ecs_sg.id]
@@ -578,9 +629,5 @@ resource "aws_ecs_service" "frontend_service" {
     container_name   = "frontend-service"
     container_port   = var.frontend_port
   }
-
-  depends_on = [
-    aws_ecs_service.api_gateway
-  ]
 }
 
